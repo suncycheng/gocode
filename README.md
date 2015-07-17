@@ -80,6 +80,14 @@ Add the following line to your **.vimrc**:
 
 And then update your packages by running `:PluginInstall`.
 
+#### Using vim-plug
+
+Add the following line to your **.vimrc**:
+
+`Plug 'nsf/gocode', { 'rtp': 'vim', 'do': '~/.vim/plugged/gocode/vim/symlink.sh' }`
+
+And then update your packages by running `:PlugInstall`.
+
 #### Other
 
 Alternatively take a look at the vundle/pathogen friendly repo: https://github.com/Blackrush/vim-gocode.
@@ -96,8 +104,17 @@ In order to install emacs script, you need to fulfill the following steps:
 
  		(require 'go-autocomplete)
 		(require 'auto-complete-config)
+		(ac-config-default)
 
 Also, there is an alternative plugin for emacs using company-mode. See `emacs-company/README` for installation instructions.
+
+If you're a MacOSX user, you may find that script useful: https://github.com/purcell/exec-path-from-shell. It helps you with setting up the right environment variables as Go and gocode require it. By default it pulls the PATH, but don't forget to add the GOPATH as well, e.g.:
+
+```
+(when (memq window-system '(mac ns))
+  (exec-path-from-shell-initialize)
+  (exec-path-from-shell-copy-env "GOPATH"))
+```
 
 ### Options
 
@@ -120,6 +137,10 @@ You can change all available options using `gocode set` command. The config file
  - *autobuild*
 
    A boolean option. If **true**, gocode will try to automatically build out-of-date packages when their source files are modified, in order to obtain the freshest autocomplete results for them. This feature is experimental. Default: **false**.
+
+ - *force-debug-output*
+
+   A string option. If is not empty, gocode will forcefully redirect the logging into that file. Also forces enabling of the debug mode on the server side. Default: "" (empty).
 
 ### Debugging
 

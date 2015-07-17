@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"go/build"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -10,8 +11,31 @@ import (
 	"strings"
 	"sync"
 	"unicode/utf8"
-	"go/build"
 )
+
+// our own readdir, which skips the files it cannot lstat
+func readdir(name string) ([]os.FileInfo, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	names, err := f.Readdirnames(-1)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]os.FileInfo, 0, len(names))
+	for _, lname := range names {
+		s, err := os.Lstat(filepath.Join(name, lname))
+		if err != nil {
+			continue
+		}
+		out = append(out, s)
+	}
+	return out, nil
+}
 
 // returns truncated 'data' and amount of bytes skipped (for cursor pos adjustment)
 func filter_out_shebang(data []byte) ([]byte, int) {
@@ -149,30 +173,30 @@ type go_build_context struct {
 
 func pack_build_context(ctx *build.Context) go_build_context {
 	return go_build_context{
-		GOARCH: ctx.GOARCH,
-		GOOS: ctx.GOOS,
-		GOROOT: ctx.GOROOT,
-		GOPATH: ctx.GOPATH,
-		CgoEnabled: ctx.CgoEnabled,
-		UseAllFiles: ctx.UseAllFiles,
-		Compiler: ctx.Compiler,
-		BuildTags: ctx.BuildTags,
-		ReleaseTags: ctx.ReleaseTags,
+		GOARCH:        ctx.GOARCH,
+		GOOS:          ctx.GOOS,
+		GOROOT:        ctx.GOROOT,
+		GOPATH:        ctx.GOPATH,
+		CgoEnabled:    ctx.CgoEnabled,
+		UseAllFiles:   ctx.UseAllFiles,
+		Compiler:      ctx.Compiler,
+		BuildTags:     ctx.BuildTags,
+		ReleaseTags:   ctx.ReleaseTags,
 		InstallSuffix: ctx.InstallSuffix,
 	}
 }
 
 func unpack_build_context(ctx *go_build_context) build.Context {
 	return build.Context{
-		GOARCH: ctx.GOARCH,
-		GOOS: ctx.GOOS,
-		GOROOT: ctx.GOROOT,
-		GOPATH: ctx.GOPATH,
-		CgoEnabled: ctx.CgoEnabled,
-		UseAllFiles: ctx.UseAllFiles,
-		Compiler: ctx.Compiler,
-		BuildTags: ctx.BuildTags,
-		ReleaseTags: ctx.ReleaseTags,
+		GOARCH:        ctx.GOARCH,
+		GOOS:          ctx.GOOS,
+		GOROOT:        ctx.GOROOT,
+		GOPATH:        ctx.GOPATH,
+		CgoEnabled:    ctx.CgoEnabled,
+		UseAllFiles:   ctx.UseAllFiles,
+		Compiler:      ctx.Compiler,
+		BuildTags:     ctx.BuildTags,
+		ReleaseTags:   ctx.ReleaseTags,
 		InstallSuffix: ctx.InstallSuffix,
 	}
 }

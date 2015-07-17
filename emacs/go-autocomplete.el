@@ -38,6 +38,16 @@
   (require 'cl)
   (require 'auto-complete))
 
+(defgroup go-autocomplete nil
+  "auto-complete for go language."
+  :prefix "ac-go-"
+  :group 'auto-complete)
+
+(defcustom ac-go-expand-arguments-into-snippets t
+  "Expand function arguments into snippets. This feature requires `yasnippet'."
+  :type 'boolean
+  :group 'go-autocomplete)
+
 ;; Close gocode daemon at exit unless it was already running
 (eval-after-load "go-mode"
   '(progn
@@ -101,10 +111,12 @@
 
 (defun ac-go-get-candidates (strings)
   (let ((prop (lambda (entry)
-		(let ((name (nth 0 entry))
-		      (summary (nth 1 entry)))
+		(let* ((name (nth 0 entry))
+		       (summary (nth 1 entry))
+		       (symbol (substring summary 0 1)))
 		  (propertize name
-			      'summary summary))))
+			      'summary summary
+			      'symbol symbol))))
 	(split (lambda (strings)
 		 (mapcar (lambda (str)
 			   (split-string str ",," t))
@@ -116,7 +128,7 @@
     (when (stringp item)
       (setq symbol (get-text-property 0 'summary item))
       (message "%s" symbol)
-      (when (featurep 'yasnippet)
+      (when (and (featurep 'yasnippet) ac-go-expand-arguments-into-snippets)
         (ac-go-insert-yas-snippet-string symbol)))))
 
 (defun ac-go-insert-yas-snippet-string (s)
@@ -179,8 +191,7 @@
     (action . ac-go-action)
     (prefix . ac-go-prefix)
     (requires . 0)
-    (cache)
-    (symbol . "g")))
+    (cache)))
 
 (add-to-list 'ac-modes 'go-mode)
 

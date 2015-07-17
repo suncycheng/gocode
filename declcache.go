@@ -6,7 +6,6 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -198,7 +197,7 @@ func autobuild(p *build.Package) error {
 		return build_package(p)
 	}
 	pt := ps.ModTime()
-	fs, err := ioutil.ReadDir(p.Dir)
+	fs, err := readdir(p.Dir)
 	if err != nil {
 		return err
 	}
@@ -218,18 +217,22 @@ func autobuild(p *build.Package) error {
 // correctly, the newly compiled package should then be in the usual place in the `$GOPATH/pkg`
 // directory, and gocode will pick it up from there.
 func build_package(p *build.Package) error {
-	log.Printf("-------------------")
-	log.Printf("rebuilding package %s", p.Name)
-	log.Printf("package import: %s", p.ImportPath)
-	log.Printf("package object: %s", p.PkgObj)
-	log.Printf("package source dir: %s", p.Dir)
-	log.Printf("package source files: %v", p.GoFiles)
+	if *g_debug {
+		log.Printf("-------------------")
+		log.Printf("rebuilding package %s", p.Name)
+		log.Printf("package import: %s", p.ImportPath)
+		log.Printf("package object: %s", p.PkgObj)
+		log.Printf("package source dir: %s", p.Dir)
+		log.Printf("package source files: %v", p.GoFiles)
+	}
 	// TODO: Should read STDERR rather than STDOUT.
 	out, err := exec.Command("go", "install", p.ImportPath).Output()
 	if err != nil {
 		return err
 	}
-	log.Printf("build out: %s\n", string(out))
+	if *g_debug {
+		log.Printf("build out: %s\n", string(out))
+	}
 	return nil
 }
 
@@ -283,7 +286,10 @@ func find_global_file(imp string, context build.Context) (string, bool) {
 	p, err := context.Import(imp, "", build.AllowBinary|build.FindOnly)
 	if err == nil {
 		if g_config.Autobuild {
-			autobuild(p)
+			err = autobuild(p)
+			if err != nil && *g_debug {
+				log.Printf("Autobuild error: %s\n", err)
+			}
 		}
 		if file_exists(p.PkgObj) {
 			log_found_package_maybe(imp, p.PkgObj)
